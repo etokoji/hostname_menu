@@ -49,7 +49,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
         
         // 利用可能なスペースを計算
-        let maxWidth: CGFloat = 200  // 固定幅を設定
+        let maxWidth: CGFloat = config.config.maxWidth
         
         // テキストの幅を計算
         let font = NSFont.menuBarFont(ofSize: 0)  // 0を指定すると、システムのデフォルトサイズになる

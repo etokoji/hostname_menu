@@ -112,6 +112,23 @@ class Configuration {
     struct Config: Codable {
         var labels: Labels
         var lastDisplay: LastDisplay
+        var maxWidth: CGFloat
+        
+        static var `default`: Config {
+            Config(
+                labels: Labels(
+                    computerName: "Computer Name: ",
+                    localHostname: "Local Hostname: ",
+                    ipAddress: "IP Address: ",
+                    showLabelsInMenuBar: false,
+                    showInterfaceNamesInMenuBar: true
+                ),
+                lastDisplay: LastDisplay(
+                    displayItem: .ipAddress(interface: nil, address: "")
+                ),
+                maxWidth: 230
+            )
+        }
     }
     
     private(set) var config: Config
@@ -134,18 +151,7 @@ class Configuration {
     
     private init() {
         // デフォルト設定
-        self.config = Config(
-            labels: Labels(
-                computerName: "Computer Name: ",
-                localHostname: "Local Hostname: ",
-                ipAddress: "IP Address: ",
-                showLabelsInMenuBar: false,
-                showInterfaceNamesInMenuBar: true
-            ),
-            lastDisplay: LastDisplay(
-                displayItem: .ipAddress(interface: nil, address: "")
-            )
-        )
+        self.config = Config.default
         
         loadConfig()
         
