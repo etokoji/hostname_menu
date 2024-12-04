@@ -1,29 +1,33 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @Environment(\.dismiss) private var dismiss
     @State private var config: Configuration.Config
-    private let configuration = Configuration.shared
+    let configuration: Configuration
+    let dismiss: () -> Void
+    private weak var hostingWindow: NSWindow?
     
-    init() {
-        _config = State(initialValue: Configuration.shared.config)
+    init(config: Configuration.Config, configuration: Configuration, dismiss: @escaping () -> Void, hostingWindow: NSWindow?) {
+        _config = State(initialValue: config)
+        self.configuration = configuration
+        self.dismiss = dismiss
+        self.hostingWindow = hostingWindow
     }
     
     var body: some View {
         VStack(spacing: 12) {
             // 表示設定セクション
             VStack(alignment: .leading, spacing: 6) {
-                Text("表示設定")
+                Text("Display Settings")
                     .bold()
-                Toggle("メニューバーにラベルを表示", isOn: $config.labels.showLabelsInMenuBar)
-                Toggle("メニューバーでインターフェース名を表示", isOn: $config.labels.showInterfaceNamesInMenuBar)
+                Toggle("Show labels in menu bar", isOn: $config.labels.showLabelsInMenuBar)
+                Toggle("Show interface names in menu bar", isOn: $config.labels.showInterfaceNamesInMenuBar)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .groupBoxStyle()
             
             // ラベル設定セクション
             VStack(alignment: .leading, spacing: 6) {
-                Text("ラベル設定")
+                Text("Label Settings")
                     .bold()
                 HStack {
                     Text("Computer Name:")
@@ -52,15 +56,15 @@ struct SettingsView: View {
             
             // 表示幅設定セクション
             VStack(alignment: .leading, spacing: 6) {
-                Text("表示幅設定")
+                Text("Width Settings")
                     .bold()
                 HStack {
-                    Text("最大幅:")
+                    Text("Max width:")
                         .frame(width: 100, alignment: .trailing)
                     TextField("", value: $config.maxWidth, formatter: NumberFormatter())
                         .textFieldStyle(.plain)
                         .frame(width: 60)
-                    Text("ピクセル")
+                    Text("pixels")
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -69,13 +73,13 @@ struct SettingsView: View {
             // ボタン
             HStack {
                 Spacer()
-                Button("保存") {
+                Button("Save") {
                     configuration.updateConfig(config)
                     closeWindow()
                 }
                 .keyboardShortcut(.defaultAction)
                 
-                Button("キャンセル") {
+                Button("Cancel") {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
@@ -87,9 +91,7 @@ struct SettingsView: View {
     }
     
     private func closeWindow() {
-        if let window = NSApplication.shared.windows.first(where: { $0.title == "設定" }) {
-            window.close()
-        }
+        hostingWindow?.close()
     }
 }
 
@@ -111,6 +113,6 @@ extension View {
 
 struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
-        SettingsView()
+        SettingsView(config: Configuration.shared.config, configuration: Configuration.shared, dismiss: {}, hostingWindow: nil)
     }
 }

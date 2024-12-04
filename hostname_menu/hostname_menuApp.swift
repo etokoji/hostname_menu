@@ -143,14 +143,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         menu.addItem(NSMenuItem.separator())
         
         // 設定メニュー
-        let settingsItem = NSMenuItem(title: "設定...", action: #selector(showSettings), keyEquivalent: ",")
+        let settingsItem = NSMenuItem(title: String(localized: "menuitem.settings"), action: #selector(showSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
         
         menu.addItem(NSMenuItem.separator())
         
         // 終了メニュー
-        let quitItem = NSMenuItem(title: "hostname_menuを終了", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: String(localized: "menuitem.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quitItem)
     }
     
@@ -184,15 +184,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             return
         }
         
-        let settingsView = SettingsView()
-        let hostingView = NSHostingView(rootView: settingsView)
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
-        window.title = "設定"
+        window.title = String(localized: "settings.window.title")
+        
+        let settingsView = SettingsView(
+            config: config.config,
+            configuration: config,
+            dismiss: { window.close() },
+            hostingWindow: window
+        )
+        let hostingView = NSHostingView(rootView: settingsView)
         window.contentView = hostingView
         window.center()
         window.isReleasedWhenClosed = false
@@ -277,6 +283,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             return a.interface < b.interface
         }
     }
+}
+
+// ネットワークインターフェース情報を保持する構造体
+struct NetworkInterface {
+    let interface: String
+    let address: String
+    let isIPv4: Bool
 }
 
 @main
