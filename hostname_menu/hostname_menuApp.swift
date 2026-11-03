@@ -1,4 +1,5 @@
 import SwiftUI
+import SystemConfiguration
 
 class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private var statusItem: NSStatusItem!
@@ -137,6 +138,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             let item = NSMenuItem(title: menuText, action: #selector(menuItemSelected(_:)), keyEquivalent: "")
             item.target = self
             item.representedObject = ("ipAddress", "\(ip.interface):\(ip.address)")
+            item.image = ip.kind.menuImage
             menu.addItem(item)
         }
         
@@ -254,6 +256,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         guard getifaddrs(&ifaddr) == 0 else { return [] }
         guard let firstAddr = ifaddr else { return [] }
         
+        let interfaceKinds = getInterfaceKinds()
+        
         for ptr in sequence(first: firstAddr, next: { $0.pointee.ifa_next }) {
             let flags = Int32(ptr.pointee.ifa_flags)
             let addr = ptr.pointee.ifa_addr.pointee
@@ -269,7 +273,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                         let address = String(cString: hostname)
                         if !address.hasPrefix("fe80") && !address.hasPrefix("::1") && address != "127.0.0.1" {
                             let interface = String(cString: ptr.pointee.ifa_name)
-                            addresses.append(NetworkInterface(interface: interface, address: address, isIPv4: isIPv4))
+                            addresses.append(NetworkInterface(interface: interface, address: address, isIPv4: isIPv4, kind: interfaceKinds[interface] ?? .other))
                         }
                     }
                 }
@@ -283,6 +287,45 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             return a.interface < b.interface
         }
     }
+    
+    // BSD名（en0 など）ごとの接続種別を取得
+    private func getInterfaceKinds() -> [String: InterfaceKind] {
+        guard let interfaces = SCNetworkInterfaceCopyAll() as? [SCNetworkInterface] else { return [:] }
+        
+        var kinds: [String: InterfaceKind] = [:]
+        for interface in interfaces {
+            guard let name = SCNetworkInterfaceGetBSDName(interface) as String?,
+                  let type = SCNetworkInterfaceGetInterfaceType(interface) else { continue }
+            
+            if type == kSCNetworkInterfaceTypeIEEE80211 {
+                kinds[name] = .wifi
+            } else if type == kSCNetworkInterfaceTypeEthernet || (type as String) == "Bridge" {
+                // Thunderbolt Bridge の種別 "Bridge" は公開定数がないため文字列で比較
+                kinds[name] = .wired
+            } else {
+                kinds[name] = .other
+            }
+        }
+        return kinds
+    }
+}
+
+// インターフェースの接続種別
+enum InterfaceKind {
+    case wifi
+    case wired
+    case other  // VPN（utun）など
+    
+    var menuImage: NSImage? {
+        switch self {
+        case .wifi:
+            return NSImage(systemSymbolName: "wifi", accessibilityDescription: String(localized: "interface.wifi"))
+        case .wired:
+            return NSImage(systemSymbolName: "cable.connector", accessibilityDescription: String(localized: "interface.wired"))
+        case .other:
+            return NSImage(systemSymbolName: "network", accessibilityDescription: String(localized: "interface.other"))
+        }
+    }
 }
 
 // ネットワークインターフェース情報を保持する構造体
@@ -290,6 +333,7 @@ struct NetworkInterface {
     let interface: String
     let address: String
     let isIPv4: Bool
+    let kind: InterfaceKind
 }
 
 @main
