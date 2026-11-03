@@ -154,6 +154,22 @@
         }
       }
     },
+    "menuitem.temporaryAddresses" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temporary IPv6 Addresses"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一時IPv6アドレス"
+          }
+        }
+      }
+    },
     "pixels" : {
       "localizations" : {
         "ja" : {

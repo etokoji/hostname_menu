@@ -133,12 +133,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         
         // IPアドレス
         let ipAddresses = getIPAddresses()
-        for ip in ipAddresses {
-            let menuText = config.formatMenuIPAddress(ip.interface, ip.kind, ip.address)
-            let item = NSMenuItem(title: menuText, action: #selector(menuItemSelected(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = ("ipAddress", "\(ip.interface):\(ip.address)")
-            menu.addItem(item)
+        for ip in ipAddresses where !ip.isTemporary {
+            menu.addItem(makeIPAddressMenuItem(ip))
+        }
+        
+        // 一時IPv6アドレスはサブメニューにまとめる
+        let temporaryAddresses = ipAddresses.filter { $0.isTemporary }
+        if !temporaryAddresses.isEmpty {
+            let submenu = NSMenu()
+            for ip in temporaryAddresses {
+                submenu.addItem(makeIPAddressMenuItem(ip))
+            }
+            let temporaryItem = NSMenuItem(title: String(localized: "menuitem.temporaryAddresses"), action: nil, keyEquivalent: "")
+            temporaryItem.submenu = submenu
+            menu.addItem(temporaryItem)
         }
         
         menu.addItem(NSMenuItem.separator())
@@ -159,6 +167,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         // 終了メニュー
         let quitItem = NSMenuItem(title: String(localized: "menuitem.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quitItem)
+    }
+    
+    private func makeIPAddressMenuItem(_ ip: NetworkInterface) -> NSMenuItem {
+        let menuText = config.formatMenuIPAddress(ip.interface, ip.kind, ip.address)
+        let item = NSMenuItem(title: menuText, action: #selector(menuItemSelected(_:)), keyEquivalent: "")
+        item.target = self
+        item.representedObject = ("ipAddress", "\(ip.interface):\(ip.address)")
+        return item
     }
     
     @objc private func menuItemSelected(_ sender: NSMenuItem) {
@@ -268,6 +284,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         guard let firstAddr = ifaddr else { return [] }
         
         let interfaceKinds = getInterfaceKinds()
+        let temporaryAddresses = getTemporaryIPv6Addresses()
         
         for ptr in sequence(first: firstAddr, next: { $0.pointee.ifa_next }) {
             let flags = Int32(ptr.pointee.ifa_flags)
@@ -284,7 +301,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                         let address = String(cString: hostname)
                         if !address.hasPrefix("fe80") && !address.hasPrefix("::1") && address != "127.0.0.1" {
                             let interface = String(cString: ptr.pointee.ifa_name)
-                            addresses.append(NetworkInterface(interface: interface, address: address, isIPv4: isIPv4, kind: interfaceKinds[interface] ?? .other))
+                            addresses.append(NetworkInterface(interface: interface, address: address, isIPv4: isIPv4, kind: interfaceKinds[interface] ?? .other, isTemporary: temporaryAddresses.contains(address)))
                         }
                     }
                 }
@@ -297,6 +314,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             if !a.isIPv4 && b.isIPv4 { return false }
             return a.interface < b.interface
         }
+    }
+    
+    // 一時IPv6アドレスの一覧を取得（getifaddrs では判別できないため ifconfig の出力から取得）
+    // 取得できない場合は空になり、すべてのアドレスがメインメニューに表示される
+    private func getTemporaryIPv6Addresses() -> Set<String> {
+        guard let output = shell("/sbin/ifconfig") else { return [] }
+        
+        var addresses: Set<String> = []
+        for line in output.split(separator: "\n") {
+            // 例: inet6 2400:db8::1 prefixlen 64 autoconf temporary
+            let fields = line.split(whereSeparator: { $0.isWhitespace })
+            if fields.count >= 2, fields[0] == "inet6", fields.contains("temporary") {
+                addresses.insert(String(fields[1]))
+            }
+        }
+        return addresses
     }
     
     // BSD名（en0 など）ごとの接続種別を取得
@@ -344,6 +377,7 @@ struct NetworkInterface {
     let address: String
     let isIPv4: Bool
     let kind: InterfaceKind
+    let isTemporary: Bool
 }
 
 @main
