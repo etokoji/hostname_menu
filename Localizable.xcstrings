@@ -122,6 +122,22 @@
         }
       }
     },
+    "menuitem.about" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@について"
+          }
+        }
+      }
+    },
     "menuitem.quit" : {
       "localizations" : {
         "en" : {

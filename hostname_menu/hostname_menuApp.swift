@@ -144,6 +144,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         
         menu.addItem(NSMenuItem.separator())
         
+        // このアプリについて
+        let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? ProcessInfo.processInfo.processName
+        let aboutItem = NSMenuItem(title: String(format: String(localized: "menuitem.about"), appName), action: #selector(showAbout), keyEquivalent: "")
+        aboutItem.target = self
+        menu.addItem(aboutItem)
+        
         // 設定メニュー
         let settingsItem = NSMenuItem(title: String(localized: "menuitem.settings"), action: #selector(showSettings), keyEquivalent: ",")
         settingsItem.target = self
@@ -177,6 +183,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                 config.saveConfig()
             }
         }
+    }
+    
+    @objc private func showAbout() {
+        // メニューバー常駐アプリでも前面に出るようにアクティブ化する
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(nil)
     }
     
     @objc private func showSettings() {
