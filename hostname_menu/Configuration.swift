@@ -226,7 +226,10 @@ class Configuration {
         return config.labels.localHostname + hostname
     }
     
-    func formatMenuIPAddress(_ interface: String, _ address: String) -> String {
+    func formatMenuIPAddress(_ interface: String, _ kind: InterfaceKind, _ address: String) -> String {
+        if let label = kind.menuLabel {
+            return "\(interface) (\(label)): \(address)"
+        }
         return "\(interface): \(address)"
     }
 }

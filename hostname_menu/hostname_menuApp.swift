@@ -134,11 +134,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         // IPアドレス
         let ipAddresses = getIPAddresses()
         for ip in ipAddresses {
-            let menuText = config.formatMenuIPAddress(ip.interface, ip.address)
+            let menuText = config.formatMenuIPAddress(ip.interface, ip.kind, ip.address)
             let item = NSMenuItem(title: menuText, action: #selector(menuItemSelected(_:)), keyEquivalent: "")
             item.target = self
             item.representedObject = ("ipAddress", "\(ip.interface):\(ip.address)")
-            item.image = ip.kind.menuImage
             menu.addItem(item)
         }
         
@@ -328,14 +327,13 @@ enum InterfaceKind {
     case wired
     case other  // VPN（utun）など
     
-    var menuImage: NSImage? {
+    // メニューに表示する種別名（その他は表示しない）
+    // NSMenuItem.image は macOS 27 で描画されないため、文字で表示する
+    var menuLabel: String? {
         switch self {
-        case .wifi:
-            return NSImage(systemSymbolName: "wifi", accessibilityDescription: String(localized: "interface.wifi"))
-        case .wired:
-            return NSImage(systemSymbolName: "cable.connector", accessibilityDescription: String(localized: "interface.wired"))
-        case .other:
-            return NSImage(systemSymbolName: "network", accessibilityDescription: String(localized: "interface.other"))
+        case .wifi: return String(localized: "interface.wifi")
+        case .wired: return String(localized: "interface.wired")
+        case .other: return nil
         }
     }
 }

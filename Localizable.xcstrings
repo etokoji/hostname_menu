@@ -34,22 +34,6 @@
         }
       }
     },
-    "interface.other" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Other network"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "その他のネットワーク"
-          }
-        }
-      }
-    },
     "interface.wifi" : {
       "localizations" : {
         "en" : {
